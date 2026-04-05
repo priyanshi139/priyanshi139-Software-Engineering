@@ -1,0 +1,148 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (Auth UID)
+    // Fields:
+    //   - uid: string (required) - Firebase Auth UID
+    //   - email: string (required, email format) - User's email
+    //   - role: string (required, enum: bride, groom, vendor, planner, admin) - User's role
+    //   - weddingId: string (optional) - Shared ID for bride and groom
+    //
+    // Collection: weddings/{weddingId}/budget
+    // Document ID: total
+    // Fields:
+    //   - total: number (required) - Total wedding budget
+    //   - weddingId: string (required) - Shared ID for bride and groom
+    //
+    // Collection: weddings/{weddingId}/categories
+    // Document ID: categoryId
+    // Fields:
+    //   - id: string (required) - Category ID
+    //   - name: string (required) - Category name
+    //   - planned: number (required) - Planned amount
+    //   - weddingId: string (required) - Shared ID for bride and groom
+    //
+    // Collection: weddings/{weddingId}/purchases
+    // Document ID: purchaseId
+    // Fields:
+    //   - id: string (required) - Purchase ID
+    //   - name: string (required) - Purchase name
+    //   - categoryId: string (required) - Category ID
+    //   - cost: number (required) - Purchase cost
+    //   - status: string (required, enum: paid, pending) - Payment status
+    //   - weddingId: string (required) - Shared ID for bride and groom
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+          (request.auth.token.email in ["mehtapriyanshi1304@gmail.com", "priyanshimehtaaa0104@gmail.com"] && 
+           request.auth.token.email_verified == true)
+        );
+    }
+
+    function isWeddingMember(weddingId) {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.weddingId == weddingId;
+    }
+
+    function isValidEmail(email) {
+      return email is string &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasRequiredFields(['uid', 'email', 'role']) &&
+             data.uid == request.auth.uid &&
+             isValidEmail(data.email) &&
+             data.role in ['bride', 'groom', 'vendor', 'planner', 'admin'];
+    }
+
+    function isValidBudget(data, weddingId) {
+      return hasRequiredFields(['total', 'weddingId']) &&
+             data.total is number && data.total >= 0 &&
+             data.weddingId == weddingId;
+    }
+
+    function isValidCategory(data, weddingId) {
+      return hasRequiredFields(['id', 'name', 'planned', 'weddingId']) &&
+             data.id is string && data.name is string && data.name.size() > 0 &&
+             data.planned is number && data.planned >= 0 &&
+             data.weddingId == weddingId;
+    }
+
+    function isValidPurchase(data, weddingId) {
+      return hasRequiredFields(['id', 'name', 'categoryId', 'cost', 'status', 'weddingId']) &&
+             data.id is string && data.name is string && data.name.size() > 0 &&
+             data.cost is number && data.cost >= 0 &&
+             data.status in ['paid', 'pending'] &&
+             data.weddingId == weddingId;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create, update: if isOwner(userId) || isAdmin();
+    }
+
+    match /weddings/{weddingId} {
+      allow read: if isWeddingMember(weddingId) || isAdmin();
+      
+      match /budget/{docId} {
+        allow read: if isWeddingMember(weddingId) || isAdmin();
+        allow write: if (isWeddingMember(weddingId) && isValidBudget(request.resource.data, weddingId)) || isAdmin();
+      }
+
+      match /categories/{categoryId} {
+        allow read: if isWeddingMember(weddingId) || isAdmin();
+        allow write: if (isWeddingMember(weddingId) && isValidCategory(request.resource.data, weddingId)) || isAdmin();
+      }
+
+      match /purchases/{purchaseId} {
+        allow read: if isWeddingMember(weddingId) || isAdmin();
+        allow write: if (isWeddingMember(weddingId) && isValidPurchase(request.resource.data, weddingId)) || isAdmin();
+      }
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

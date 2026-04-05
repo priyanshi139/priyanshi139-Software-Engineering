@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores user profile information and role.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["bride", "groom", "vendor", "planner", "admin"] },
+        "weddingId": { "type": "string", "description": "Shared ID for bride and groom" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Budget": {
+      "title": "Wedding Budget",
+      "description": "Stores the total budget for a wedding.",
+      "type": "object",
+      "properties": {
+        "total": { "type": "number" },
+        "weddingId": { "type": "string" }
+      },
+      "required": ["total", "weddingId"]
+    },
+    "BudgetCategory": {
+      "title": "Budget Category",
+      "description": "A category within the wedding budget.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "planned": { "type": "number" },
+        "weddingId": { "type": "string" }
+      },
+      "required": ["id", "name", "planned", "weddingId"]
+    },
+    "BudgetPurchase": {
+      "title": "Budget Purchase",
+      "description": "An individual purchase or payment.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "cost": { "type": "number" },
+        "status": { "type": "string", "enum": ["paid", "pending"] },
+        "vendorId": { "type": "string" },
+        "collaborators": { "type": "array", "items": { "type": "string" } },
+        "weddingId": { "type": "string" }
+      },
+      "required": ["id", "name", "categoryId", "cost", "status", "weddingId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/weddings/{weddingId}/budget/total": {
+      "schema": "Budget",
+      "description": "Total budget for a wedding"
+    },
+    "/weddings/{weddingId}/categories/{categoryId}": {
+      "schema": "BudgetCategory",
+      "description": "Budget categories for a wedding"
+    },
+    "/weddings/{weddingId}/purchases/{purchaseId}": {
+      "schema": "BudgetPurchase",
+      "description": "Individual purchases for a wedding"
+    }
+  }
+}
