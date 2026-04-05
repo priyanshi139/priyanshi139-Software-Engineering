@@ -5,6 +5,8 @@ export interface UserDetails {
   state: string;
   city: string;
   address: string;
+  profileImage?: string;
+  contact?: string;
 }
 
 export interface WeddingDetails {
@@ -15,6 +17,9 @@ export interface WeddingDetails {
   venueName?: string;
   venueLocation?: string;
   fianceName?: string;
+  eventType?: string;
+  budget?: number;
+  guests?: number;
 }
 
 export interface WeddingEvent {
