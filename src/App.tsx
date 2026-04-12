@@ -2315,8 +2315,14 @@ export default function App() {
     const [splashStep, setSplashStep] = useState(0);
 
     useEffect(() => {
+      const getTimeout = (step: number) => {
+        if (step === 0) return 2000; // Logo for 2 sec
+        if (step >= 1 && step <= 3) return 2500; // Slower initial screens
+        return 1500; // Remaining screens same speed
+      };
+
       const timer = setTimeout(() => {
-        if (splashStep < 6) {
+        if (splashStep < 7) {
           setSplashStep(s => s + 1);
         } else {
           setShowSplash(false);
@@ -2324,7 +2330,7 @@ export default function App() {
             navigate('onboarding_info');
           }
         }
-      }, 1500); // Further reduced for mobile speed
+      }, getTimeout(splashStep));
       return () => clearTimeout(timer);
     }, [splashStep]);
 
@@ -2357,6 +2363,26 @@ export default function App() {
         <AnimatePresence mode="wait">
           {splashStep === 0 && (
             <motion.div 
+              key="app-logo"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.1 }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className="flex flex-col items-center space-y-4"
+            >
+              <div className="flex items-center gap-3">
+                <Sparkles size={48} className="text-gold mandala-glow" />
+                <h1 className="brand-logo-large text-6xl gold-shimmer tracking-tight">VIVAHA</h1>
+              </div>
+              <div className="w-32 h-[1px] bg-gold/30 mx-auto" />
+              <p className="text-champagne/80 tracking-[0.3em] uppercase text-xs font-bold">
+                Your AI Wedding Concierge
+              </p>
+            </motion.div>
+          )}
+
+          {splashStep === 1 && (
+            <motion.div 
               key="ganesha"
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -2384,7 +2410,7 @@ export default function App() {
             </motion.div>
           )}
 
-          {splashStep === 1 && (
+          {splashStep === 2 && (
             <motion.div 
               key="shloka1"
               initial={{ opacity: 0, y: 30 }}
@@ -2407,7 +2433,7 @@ export default function App() {
             </motion.div>
           )}
 
-          {splashStep === 2 && (
+          {splashStep === 3 && (
             <motion.div 
               key="shloka2"
               initial={{ opacity: 0, scale: 0.95 }}
@@ -2437,7 +2463,7 @@ export default function App() {
             </motion.div>
           )}
 
-          {splashStep === 3 && (
+          {splashStep === 4 && (
             <motion.div 
               key="about1"
               initial={{ opacity: 0, x: 20 }}
@@ -2455,7 +2481,7 @@ export default function App() {
             </motion.div>
           )}
 
-          {splashStep === 4 && (
+          {splashStep === 5 && (
             <motion.div 
               key="about2"
               initial={{ opacity: 0, scale: 0.9 }}
@@ -2473,7 +2499,7 @@ export default function App() {
             </motion.div>
           )}
 
-          {splashStep === 5 && (
+          {splashStep === 6 && (
             <motion.div 
               key="about3"
               initial={{ opacity: 0, y: 20 }}
@@ -2491,7 +2517,7 @@ export default function App() {
             </motion.div>
           )}
 
-          {splashStep === 6 && (
+          {splashStep === 7 && (
             <motion.div 
               key="logo"
               initial={{ opacity: 0 }}
@@ -6133,8 +6159,6 @@ export default function App() {
       <div className="w-full max-w-md mx-auto h-[100dvh] bg-ivory shadow-2xl relative overflow-x-hidden flex flex-col box-border">
         <LoadingOverlay />
         <ErrorToast />
-        <AnimatePresence mode="wait">
-        {showSplash && <SplashScreen key="splash" />}
         
         <AnimatePresence>
           {selectedVendor && (
@@ -6171,6 +6195,9 @@ export default function App() {
             />
           )}
         </AnimatePresence>
+
+        <AnimatePresence mode="wait">
+        {showSplash && <SplashScreen key="splash" />}
 
         {!showSplash && state.screen === 'onboarding_info' && <OnboardingInfo key="info" />}
         {!showSplash && state.screen === 'role_selection' && <RoleSelectionScreen key="roles" />}
