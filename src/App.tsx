@@ -502,16 +502,20 @@ const AdminLogin: React.FC<{ onLogin: (user: AdminProfile) => void }> = ({ onLog
     setLoading(true);
     setError('');
     try {
-    const res = await fetch('/api/admin/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email, password })
-});
-const data = await res.json();
-if (data.success) {
-  onLogin(data.user);
+   // Simple admin auth check
+const ADMIN_EMAIL = 'admin@wedding.com';
+const ADMIN_PASSWORD = 'admin123';
+
+if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+  onLogin({
+    name: 'Admin User',
+    email: email,
+    role: 'Super Admin',
+    image: `https://ui-avatars.com/api/?name=Admin&background=1e293b&color=D4AF37`,
+    contact: '+91 98765 43210'
+  });
 } else {
-  setError(data.error || 'Invalid credentials');
+  setError('Invalid credentials. Use admin@wedding.com / admin123');
 }
     } catch (err) {
       setError('Connection error. Please try again.');
