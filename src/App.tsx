@@ -596,174 +596,54 @@ if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
 };
 
 const AdminDashboard: React.FC<{ admin: AdminProfile; onLogout: () => void; appState: AppState }> = ({ admin, onLogout, appState }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'vendors' | 'events' | 'revenue' | 'analytics' | 'ai' | 'notifications' | 'settings' | 'profile'>('overview');
-  const [vendors, setVendors] = useState<AdminVendor[]>([]);
-  const [bookings, setBookings] = useState<AdminBooking[]>([]);
-  const [users, setUsers] = useState<AdminUserRecord[]>([]);
-  const [events, setEvents] = useState<AdminEventRecord[]>([]);
-  const [reports, setReports] = useState<AdminReports | null>(null);
-  const [aiConfig, setAiConfig] = useState<AIConfig>({
-    expertChatPrompt: "You are Aira, a professional AI Wedding Concierge for the Vivaha app. Your goal is to help couples plan their dream wedding.",
-    recommendationsEnabled: true
-  });
-  const [adminProfile, setAdminProfile] = useState<AdminProfile>(admin);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [editedAdmin, setEditedAdmin] = useState<AdminProfile>(admin);
-  const [loading, setLoading] = useState(false);
-  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'vendors' | 'events' | 'revenue' | 'ai' | 'settings'>('overview');
+  const [adminProfile] = useState<AdminProfile>(admin);
 
-  useEffect(() => {
-    fetchData();
-  }, [activeTab]);
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      // Mock data for demonstration
-      const mockReports: AdminReports = {
-        totalUsers: 1250,
-        totalEvents: 450,
-        approvedVendors: 320,
-        totalRevenue: 2500000,
-        totalBookings: 850,
-        pendingApprovals: 12,
-        monthlyTrends: [
-          { month: 'Jan', bookings: 45, revenue: 250000 },
-          { month: 'Feb', bookings: 52, revenue: 310000 },
-          { month: 'Mar', bookings: 48, revenue: 280000 },
-          { month: 'Apr', bookings: 61, revenue: 380000 },
-          { month: 'May', bookings: 55, revenue: 340000 },
-          { month: 'Jun', bookings: 67, revenue: 420000 },
-        ]
-      };
-
-      const mockUsers: AdminUserRecord[] = [
-        { id: '1', name: appState.userDetails?.fullName || 'Priya Sharma', email: 'user@example.com', userType: appState.userType || 'bride', status: 'active', lastActivity: new Date().toISOString() },
-        { id: '2', name: appState.fianceDetails?.fullName || 'Rohan Mehta', email: 'fiance@example.com', userType: appState.userType === 'bride' ? 'groom' : 'bride', status: 'active', lastActivity: new Date().toISOString() },
-        { id: '3', name: 'Elite Weddings', email: 'elite@example.com', userType: 'planner', status: 'active', lastActivity: new Date().toISOString() },
-      ];
-
-      const mockVendors: AdminVendor[] = [
-        { id: '1', name: 'Royal Palace Udaipur', category: 'Venue', services: 'Full Service', status: 'approved', rating: 4.9, details: 'Luxury venue in Udaipur' },
-        { id: '2', name: 'Dream Clicks', category: 'Photography', services: 'Candid, Traditional', status: 'pending', rating: 4.7, details: 'Professional photography services' },
-      ];
-
-      const mockEvents: AdminEventRecord[] = [
-        { id: '1', name: 'Mehta Wedding', type: 'wedding', date: '2026-12-12', location: 'Udaipur', status: 'approved', details: 'Grand wedding at Royal Palace' },
-        { id: '2', name: 'Corporate Gala', type: 'corporate', date: '2026-05-20', location: 'Mumbai', status: 'pending', details: 'Annual corporate event' },
-      ];
-
-      const mockBookings: AdminBooking[] = [
-        { id: '1', customer_name: appState.userDetails?.fullName || 'Priya Sharma', service: 'Venue Booking', amount: 500000, date: '2026-03-15', payment_status: 'paid', customer_id: 'u1', vendor_id: 'v1' },
-        { id: '2', customer_name: appState.fianceDetails?.fullName || 'Rohan Mehta', service: 'Photography', amount: 150000, date: '2026-03-20', payment_status: 'pending', customer_id: 'u2', vendor_id: 'v2' },
-      ];
-
-      const mockNotifications: AdminNotification[] = [
-        { id: '1', title: 'New Vendor Registration', message: 'Dream Clicks has applied to join the platform.', date: new Date().toISOString(), read: false },
-        { id: '2', title: 'Payment Received', message: '₹5,00,000 received for Mehta Wedding.', date: new Date().toISOString(), read: true },
-      ];
-
-      if (activeTab === 'overview' || activeTab === 'analytics') setReports(mockReports);
-      if (activeTab === 'users') setUsers(mockUsers);
-      if (activeTab === 'vendors') setVendors(mockVendors);
-      if (activeTab === 'events') setEvents(mockEvents);
-      if (activeTab === 'revenue') setBookings(mockBookings);
-      if (activeTab === 'notifications') setNotifications(mockNotifications);
-      
-    } catch (err) {
-      console.error("Failed to fetch admin data", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSaveProfile = () => {
-    setAdminProfile(editedAdmin);
-    setIsEditingProfile(false);
-    // In a real app, we'd call an API here
-  };
-
-  const updateStatus = async (type: 'users' | 'vendors' | 'events', id: string, status: string) => {
-    await fetch(`/api/admin/${type}/${id}/status`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
-    });
-    fetchData();
-  };
-
-  const saveAiConfig = async (config: AIConfig) => {
-    await fetch('/api/admin/ai-config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        expert_chat_prompt: config.expertChatPrompt, 
-        recommendations_enabled: config.recommendationsEnabled 
-      })
-    });
-    setAiConfig(config);
-  };
-
-  const sendNotification = async (title: string, message: string) => {
-    await fetch('/api/admin/notifications', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, message })
-    });
-    fetchData();
+  const mockReports = {
+    totalUsers: 1250, totalEvents: 450, approvedVendors: 320, totalRevenue: 2500000,
+    monthlyTrends: [
+      { month: 'Jan', bookings: 45 }, { month: 'Feb', bookings: 52 },
+      { month: 'Mar', bookings: 48 }, { month: 'Apr', bookings: 61 },
+      { month: 'May', bookings: 55 }, { month: 'Jun', bookings: 67 },
+    ]
   };
 
   const sidebarItems = [
-    { id: 'overview', label: 'Overview', icon: <LayoutDashboard size={18} /> },
-    { id: 'users', label: 'Users', icon: <Users size={18} /> },
-    { id: 'vendors', label: 'Vendors', icon: <Briefcase size={18} /> },
-    { id: 'events', label: 'Events', icon: <Calendar size={18} /> },
-    { id: 'revenue', label: 'Revenue', icon: <CreditCard size={18} /> },
-    { id: 'analytics', label: 'Analytics', icon: <TrendingUp size={18} /> },
-    { id: 'ai', label: 'AI Control', icon: <Zap size={18} /> },
-    { id: 'notifications', label: 'Alerts', icon: <Bell size={18} /> },
-    { id: 'settings', label: 'Settings', icon: <Settings size={18} /> },
-    { id: 'profile', label: 'Profile', icon: <User size={18} /> },
+    { id: 'overview', label: 'Overview', icon: <LayoutDashboard size={15} /> },
+    { id: 'users', label: 'Users', icon: <Users size={15} /> },
+    { id: 'vendors', label: 'Vendors', icon: <Briefcase size={15} /> },
+    { id: 'events', label: 'Events', icon: <Calendar size={15} /> },
+    { id: 'revenue', label: 'Revenue', icon: <CreditCard size={15} /> },
+    { id: 'ai', label: 'AI Control', icon: <Zap size={15} /> },
+    { id: 'settings', label: 'Settings', icon: <Settings size={15} /> },
   ];
 
-  const QuickAction = ({ icon, label, onClick, color }: { icon: React.ReactNode, label: string, onClick: () => void, color: string }) => (
-    <button 
-      onClick={onClick}
-      className="flex flex-col items-center gap-3 p-6 bg-white rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md hover:border-gold/30 transition-all group"
-    >
-      <div className={`w-12 h-12 rounded-2xl ${color} flex items-center justify-center text-white shadow-lg shadow-current/20 group-hover:scale-110 transition-transform`}>
-        {icon}
-      </div>
-      <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{label}</span>
-    </button>
-  );
-
   return (
-    <div className="absolute inset-0 bg-slate-50 flex z-[200] overflow-hidden">
-      {/* Sidebar */}
-      <div className="w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800">
-        <div className="p-6 border-b border-slate-800 flex items-center gap-3">
-          <div className="w-10 h-10 bg-gold rounded-xl flex items-center justify-center text-slate-900 shadow-lg shadow-gold/20">
-            <Shield size={24} />
-          </div>
-          <div>
-            <h1 className="text-ivory font-bold tracking-tight">VIVAHA</h1>
-            <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Admin Portal</p>
-          </div>
+    <div className="absolute inset-0 flex z-[200] overflow-hidden" style={{ fontFamily: 'system-ui' }}>
+      {/* SIDEBAR */}
+      <div style={{ width: 200, minWidth: 200, background: '#1e293b', display: 'flex', flexDirection: 'column' }}>
+        
+        {/* Logo */}
+        <div style={{ padding: '20px 16px 14px', borderBottom: '0.5px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ fontSize: 15, fontWeight: 500, color: '#D4AF37', letterSpacing: '0.12em' }}>✦ VIVAHA</div>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 2 }}>Admin Portal</div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1 no-scrollbar">
+        {/* Nav */}
+        <nav style={{ flex: 1, overflowY: 'auto', padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
           {sidebarItems.map(item => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id as any)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                activeTab === item.id 
-                  ? 'bg-gold text-slate-900 shadow-lg shadow-gold/10' 
-                  : 'hover:bg-slate-800 hover:text-ivory'
-              }`}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '9px 10px', borderRadius: 8,
+                fontSize: 12.5, border: 'none', cursor: 'pointer',
+                background: activeTab === item.id ? '#D4AF37' : 'transparent',
+                color: activeTab === item.id ? '#1e293b' : 'rgba(255,255,255,0.55)',
+                fontWeight: activeTab === item.id ? 600 : 400,
+                textAlign: 'left', width: '100%',
+              }}
             >
               {item.icon}
               {item.label}
@@ -771,803 +651,287 @@ const AdminDashboard: React.FC<{ admin: AdminProfile; onLogout: () => void; appS
           ))}
         </nav>
 
-        <div className="p-6 border-t border-slate-800">
-          <div className="bg-slate-800/50 p-4 rounded-2xl mb-6 border border-slate-700/50">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">System Health</span>
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+        {/* Footer */}
+        <div style={{ padding: '12px 8px', borderTop: '0.5px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px' }}>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#D4AF37', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: '#1e293b', flexShrink: 0 }}>
+              {adminProfile.name.charAt(0)}
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-1 bg-slate-700 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 w-[98%]" />
-              </div>
-              <span className="text-[10px] font-bold text-ivory">98%</span>
+            <div>
+              <div style={{ fontSize: 11.5, fontWeight: 500, color: 'rgba(255,255,255,0.8)' }}>{adminProfile.name}</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>{adminProfile.role}</div>
             </div>
           </div>
-          <div className="flex items-center gap-3 mb-6">
-            <img src={adminProfile.image} className="w-10 h-10 rounded-full border border-slate-700" alt="Admin" referrerPolicy="no-referrer" />
-            <div className="overflow-hidden">
-              <p className="text-xs font-bold text-ivory truncate">{adminProfile.name}</p>
-              <p className="text-[10px] text-slate-500 truncate">{adminProfile.role}</p>
-            </div>
-          </div>
-          <button 
+          <button
             onClick={onLogout}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 text-red-500 text-xs font-bold hover:bg-red-500 hover:text-white transition-all"
+            style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 10px', borderRadius: 8, background: 'rgba(239,68,68,0.1)', border: 'none', color: '#f87171', fontSize: 12, cursor: 'pointer', marginTop: 4 }}
           >
-            <LogOut size={14} /> Logout
+            <LogOut size={13} /> Logout
           </button>
         </div>
       </div>
 
-      {/* Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-slate-800 capitalize">{activeTab.replace('_', ' ')}</h2>
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input 
-                type="text" 
-                placeholder="Search..." 
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-gold/30 transition-all w-64"
-              />
-            </div>
-            <button className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-all relative">
-              <Bell size={20} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-rose rounded-full border-2 border-white" />
-            </button>
-          </div>
-        </header>
+      {/* MAIN CONTENT */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#f8fafc' }}>
+        
+        {/* Topbar */}
+        <div style={{ height: 52, minHeight: 52, background: 'white', borderBottom: '0.5px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px' }}>
+          <span style={{ fontSize: 15, fontWeight: 500, color: '#1e293b', textTransform: 'capitalize' }}>{activeTab}</span>
+          <button
+            onClick={onLogout}
+            style={{ fontSize: 12, color: '#64748b', background: '#f1f5f9', border: 'none', padding: '6px 14px', borderRadius: 8, cursor: 'pointer' }}
+          >
+            Logout
+          </button>
+        </div>
 
-        <main className="flex-1 overflow-y-auto p-8 no-scrollbar">
-          {loading ? (
-            <div className="h-full flex items-center justify-center">
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-12 h-12 border-4 border-gold/20 border-t-gold rounded-full animate-spin" />
-                <p className="text-sm text-slate-400 font-medium">Loading data...</p>
+        {/* Content */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {/* OVERVIEW */}
+          {activeTab === 'overview' && (
+            <>
+              {/* Stats */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                {[
+                  { label: 'Total Users', value: '1,250', color: '#E6F1FB', iconColor: '#185FA5' },
+                  { label: 'Total Events', value: '450', color: '#EEEDFE', iconColor: '#534AB7' },
+                  { label: 'Vendors', value: '320', color: '#FAEEDA', iconColor: '#854F0B' },
+                  { label: 'Revenue', value: '₹25L', color: '#EAF3DE', iconColor: '#3B6D11' },
+                ].map((s, i) => (
+                  <div key={i} style={{ background: 'white', border: '0.5px solid #e2e8f0', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 38, height: 38, borderRadius: 10, background: s.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <TrendingUp size={18} color={s.iconColor} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.label}</div>
+                      <div style={{ fontSize: 20, fontWeight: 600, color: '#1e293b' }}>{s.value}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          ) : (
-            <div className="max-w-6xl mx-auto space-y-8">
-              {activeTab === 'overview' && reports && (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {[
-                      { label: 'Total Users', value: reports.totalUsers, icon: <Users size={24} />, color: 'bg-blue-500' },
-                      { label: 'Total Events', value: reports.totalEvents, icon: <Calendar size={24} />, color: 'bg-purple-500' },
-                      { label: 'Total Vendors', value: reports.approvedVendors, icon: <Briefcase size={24} />, color: 'bg-gold' },
-                      { label: 'Total Revenue', value: `₹${(reports.totalRevenue / 100000).toFixed(1)}L`, icon: <CreditCard size={24} />, color: 'bg-emerald-500' },
-                    ].map((stat, i) => (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.1 }}
-                        key={i} 
-                        className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex items-center gap-4"
-                      >
-                        <div className={`w-14 h-14 rounded-2xl ${stat.color} flex items-center justify-center text-white shadow-lg shadow-current/20`}>
-                          {stat.icon}
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                          <p className="text-2xl font-bold text-slate-800">{stat.value}</p>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
 
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest ml-2">Quick Actions</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                      <QuickAction icon={<UserPlus size={20} />} label="Add User" color="bg-blue-500" onClick={() => setActiveTab('users')} />
-                      <QuickAction icon={<Plus size={20} />} label="Add Vendor" color="bg-gold" onClick={() => setActiveTab('vendors')} />
-                      <QuickAction icon={<Bell size={20} />} label="Broadcast" color="bg-rose" onClick={() => setActiveTab('notifications')} />
-                      <QuickAction icon={<FileText size={20} />} label="Reports" color="bg-emerald-500" onClick={() => setActiveTab('revenue')} />
-                      <QuickAction icon={<Zap size={20} />} label="AI Config" color="bg-purple-500" onClick={() => setActiveTab('ai')} />
-                      <QuickAction icon={<Settings size={20} />} label="Settings" color="bg-slate-600" onClick={() => setActiveTab('settings')} />
+              {/* Chart */}
+              <div style={{ background: 'white', border: '0.5px solid #e2e8f0', borderRadius: 12, padding: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b', marginBottom: 14 }}>Monthly Bookings</div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, height: 100 }}>
+                  {mockReports.monthlyTrends.map((m, i) => (
+                    <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                      <div style={{ width: '100%', borderRadius: '4px 4px 0 0', background: i === 5 ? '#185FA5' : i === 3 ? '#378ADD' : '#B5D4F4', height: `${(m.bookings / 67) * 100}%` }} />
+                      <span style={{ fontSize: 10, color: '#94a3b8' }}>{m.month}</span>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                      <div className="flex items-center justify-between mb-8">
-                        <h3 className="font-bold text-slate-800">Monthly Booking Trends</h3>
-                        <PieChart className="text-slate-300" size={20} />
-                      </div>
-                      <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={reports.monthlyTrends}>
-                            <defs>
-                              <linearGradient id="colorBookings" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor="#D4AF37" stopOpacity={0}/>
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                            <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                            <Tooltip 
-                              contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                            />
-                            <Area type="monotone" dataKey="bookings" stroke="#D4AF37" strokeWidth={3} fillOpacity={1} fill="url(#colorBookings)" />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                      <div className="flex items-center justify-between mb-6">
-                        <h3 className="font-bold text-slate-800">Recent Activity</h3>
-                        <Activity size={18} className="text-slate-300" />
-                      </div>
-                      <div className="space-y-6">
-                        {[
-                          { user: 'Priya Sharma', action: 'Booked Venue', time: '10m ago', icon: <Home size={14} />, color: 'bg-blue-100 text-blue-600' },
-                          { user: 'Royal Palace', action: 'Updated Pricing', time: '45m ago', icon: <Tag size={14} />, color: 'bg-gold/10 text-gold' },
-                          { user: 'Amit Kumar', action: 'New Registration', time: '2h ago', icon: <UserPlus size={14} />, color: 'bg-emerald-100 text-emerald-600' },
-                          { user: 'System', action: 'Backup Complete', time: '5h ago', icon: <Shield size={14} />, color: 'bg-slate-100 text-slate-600' },
-                        ].map((item, i) => (
-                          <div key={i} className="flex items-start gap-3">
-                            <div className={`w-8 h-8 rounded-xl ${item.color} flex items-center justify-center flex-shrink-0`}>
-                              {item.icon}
-                            </div>
-                            <div className="overflow-hidden">
-                              <p className="text-xs font-bold text-slate-800 truncate">{item.user}</p>
-                              <p className="text-[10px] text-slate-500 truncate">{item.action}</p>
-                            </div>
-                            <span className="text-[10px] text-slate-400 ml-auto flex-shrink-0">{item.time}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <button className="w-full mt-8 py-3 rounded-xl bg-slate-50 text-slate-500 text-[10px] font-bold uppercase tracking-widest hover:bg-slate-100 transition-all">
-                        View All Activity
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {activeTab === 'users' && (
-                <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
-                  <div className="p-8 border-b border-slate-100 flex items-center justify-between">
-                    <h3 className="font-bold text-slate-800">User Management</h3>
-                    <div className="flex gap-2">
-                      <button className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold flex items-center gap-2">
-                        <Filter size={14} /> Filter
-                      </button>
-                      <button className="px-4 py-2 rounded-xl bg-gold text-slate-900 text-xs font-bold flex items-center gap-2">
-                        <UserPlus size={14} /> Add User
-                      </button>
-                    </div>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50">
-                          <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">User</th>
-                          <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Type</th>
-                          <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
-                          <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Last Activity</th>
-                          <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-50">
-                        {users.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase())).map(user => (
-                          <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-8 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold">
-                                  {user.name.charAt(0)}
-                                </div>
-                                <div>
-                                  <p className="text-sm font-bold text-slate-800">{user.name}</p>
-                                  <p className="text-xs text-slate-500">{user.email}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-8 py-4">
-                              <span className="text-xs font-medium text-slate-600 capitalize">{user.userType}</span>
-                            </td>
-                            <td className="px-8 py-4">
-                              <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
-                                user.status === 'active' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
-                              }`}>
-                                {user.status}
-                              </span>
-                            </td>
-                            <td className="px-8 py-4">
-                              <p className="text-xs text-slate-500">{new Date(user.lastActivity).toLocaleDateString()}</p>
-                            </td>
-                            <td className="px-8 py-4 text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <button className="p-2 text-slate-400 hover:text-gold transition-colors"><Eye size={16} /></button>
-                                <button className="p-2 text-slate-400 hover:text-rose transition-colors"><Edit size={16} /></button>
-                                <button 
-                                  onClick={() => updateStatus('users', user.id, user.status === 'active' ? 'blocked' : 'active')}
-                                  className={`p-2 transition-colors ${user.status === 'active' ? 'text-slate-400 hover:text-red-500' : 'text-emerald-500 hover:text-emerald-600'}`}
-                                >
-                                  {user.status === 'active' ? <Ban size={16} /> : <Unlock size={16} />}
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  ))}
                 </div>
-              )}
+              </div>
 
-              {activeTab === 'vendors' && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-slate-800">Vendor Directory</h3>
-                    <button className="bg-gold text-slate-900 px-6 py-3 rounded-2xl font-bold text-xs flex items-center gap-2 shadow-lg shadow-gold/10">
-                      <Plus size={16} /> Add New Vendor
-                    </button>
+              {/* Recent Activity */}
+              <div style={{ background: 'white', border: '0.5px solid #e2e8f0', borderRadius: 12, padding: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b', marginBottom: 12 }}>Recent Activity</div>
+                {[
+                  { name: 'Priya Sharma', action: 'Booked venue', time: '10m ago', bg: '#E6F1FB' },
+                  { name: 'Royal Palace', action: 'Updated pricing', time: '45m ago', bg: '#FAEEDA' },
+                  { name: 'Amit Kumar', action: 'New registration', time: '2h ago', bg: '#EAF3DE' },
+                  { name: 'System', action: 'Backup complete', time: '5h ago', bg: '#F1EFE8' },
+                ].map((a, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < 3 ? '0.5px solid #f1f5f9' : 'none' }}>
+                    <div style={{ width: 30, height: 30, borderRadius: 8, background: a.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <User size={14} color="#64748b" />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12.5, fontWeight: 500, color: '#1e293b' }}>{a.name}</div>
+                      <div style={{ fontSize: 11, color: '#94a3b8' }}>{a.action}</div>
+                    </div>
+                    <span style={{ fontSize: 10.5, color: '#cbd5e1' }}>{a.time}</span>
                   </div>
+                ))}
+              </div>
+            </>
+          )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {vendors.filter(v => v.name.toLowerCase().includes(searchTerm.toLowerCase())).map(vendor => (
-                      <motion.div 
-                        layout
-                        key={vendor.id} 
-                        className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col"
-                      >
-                        <div className="flex justify-between items-start mb-6">
-                          <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">
-                              <ImageIcon size={28} />
+          {/* USERS */}
+          {activeTab === 'users' && (
+            <div style={{ background: 'white', border: '0.5px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+              <div style={{ padding: '12px 16px', borderBottom: '0.5px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>User Management</span>
+                <button style={{ background: '#185FA5', color: 'white', border: 'none', padding: '6px 12px', borderRadius: 6, fontSize: 11.5, cursor: 'pointer' }}>+ Add User</button>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+                  <thead>
+                    <tr style={{ background: '#f8fafc' }}>
+                      {['User', 'Type', 'Status', 'Actions'].map(h => (
+                        <th key={h} style={{ padding: '9px 14px', textAlign: 'left', fontSize: 10.5, fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { name: appState.userDetails?.fullName || 'Priya Sharma', email: 'priya@example.com', type: 'Bride', status: 'Active', statusColor: '#EAF3DE', textColor: '#3B6D11' },
+                      { name: appState.fianceDetails?.fullName || 'Rohan Mehta', email: 'rohan@example.com', type: 'Groom', status: 'Active', statusColor: '#EAF3DE', textColor: '#3B6D11' },
+                      { name: 'Elite Weddings', email: 'elite@example.com', type: 'Planner', status: 'Pending', statusColor: '#FAEEDA', textColor: '#854F0B' },
+                    ].map((u, i) => (
+                      <tr key={i} style={{ borderTop: '0.5px solid #f1f5f9' }}>
+                        <td style={{ padding: '10px 14px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#E6F1FB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 600, color: '#185FA5' }}>
+                              {u.name.charAt(0)}
                             </div>
                             <div>
-                              <h4 className="font-bold text-slate-800">{vendor.name}</h4>
-                              <p className="text-xs text-slate-500 capitalize">{vendor.category} • {vendor.services}</p>
+                              <div style={{ fontWeight: 500, color: '#1e293b' }}>{u.name}</div>
+                              <div style={{ fontSize: 11, color: '#94a3b8' }}>{u.email}</div>
                             </div>
                           </div>
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
-                            vendor.status === 'approved' ? 'bg-emerald-100 text-emerald-600' : 
-                            vendor.status === 'rejected' ? 'bg-red-100 text-red-600' : 
-                            'bg-amber-100 text-amber-600'
-                          }`}>
-                            {vendor.status}
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center gap-4 mb-6">
-                          <div className="flex-1 bg-slate-50 p-3 rounded-2xl text-center">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Rating</p>
-                            <div className="flex items-center justify-center gap-1 text-gold">
-                              <Star size={12} fill="currentColor" />
-                              <span className="text-sm font-bold">{vendor.rating || 'N/A'}</span>
-                            </div>
+                        </td>
+                        <td style={{ padding: '10px 14px', color: '#64748b' }}>{u.type}</td>
+                        <td style={{ padding: '10px 14px' }}>
+                          <span style={{ background: u.statusColor, color: u.textColor, padding: '2px 8px', borderRadius: 20, fontSize: 10.5, fontWeight: 500 }}>{u.status}</span>
+                        </td>
+                        <td style={{ padding: '10px 14px' }}>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button style={{ fontSize: 11, padding: '3px 8px', borderRadius: 5, border: '0.5px solid #e2e8f0', background: 'none', cursor: 'pointer', color: '#64748b' }}>View</button>
+                            <button style={{ fontSize: 11, padding: '3px 8px', borderRadius: 5, border: '0.5px solid #e2e8f0', background: 'none', cursor: 'pointer', color: '#A32D2D' }}>Block</button>
                           </div>
-                          <div className="flex-1 bg-slate-50 p-3 rounded-2xl text-center">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Performance</p>
-                            <p className="text-sm font-bold text-slate-800">High</p>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2 mt-auto">
-                          {vendor.status === 'pending' ? (
-                            <>
-                              <button 
-                                onClick={() => updateStatus('vendors', vendor.id, 'approved')}
-                                className="flex-1 bg-emerald-500 text-white py-3 rounded-xl text-xs font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20"
-                              >
-                                Approve
-                              </button>
-                              <button 
-                                onClick={() => updateStatus('vendors', vendor.id, 'rejected')}
-                                className="flex-1 bg-red-500 text-white py-3 rounded-xl text-xs font-bold hover:bg-red-600 transition-all shadow-lg shadow-red-500/20"
-                              >
-                                Reject
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button className="flex-1 bg-slate-100 text-slate-600 py-3 rounded-xl text-xs font-bold hover:bg-slate-200 transition-all">Edit</button>
-                              <button className="flex-1 bg-slate-100 text-red-500 py-3 rounded-xl text-xs font-bold hover:bg-red-50 transition-all">Delete</button>
-                            </>
-                          )}
-                        </div>
-                      </motion.div>
+                        </td>
+                      </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* VENDORS */}
+          {activeTab === 'vendors' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              {[
+                { name: 'Royal Palace Udaipur', category: 'Venue', rating: 4.9, status: 'Approved', sc: '#EAF3DE', tc: '#3B6D11' },
+                { name: 'Dream Clicks Studio', category: 'Photography', rating: 4.7, status: 'Pending', sc: '#FAEEDA', tc: '#854F0B' },
+              ].map((v, i) => (
+                <div key={i} style={{ background: 'white', border: '0.5px solid #e2e8f0', borderRadius: 12, padding: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>{v.name}</div>
+                      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{v.category}</div>
+                    </div>
+                    <span style={{ background: v.sc, color: v.tc, padding: '2px 8px', borderRadius: 20, fontSize: 10.5, fontWeight: 500 }}>{v.status}</span>
                   </div>
-                </div>
-              )}
-
-              {activeTab === 'events' && (
-                <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
-                  <div className="p-8 border-b border-slate-100 flex items-center justify-between">
-                    <h3 className="font-bold text-slate-800">Event Management</h3>
-                    <div className="flex gap-2">
-                      <select 
-                        className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold border-none outline-none"
-                        onChange={e => setFilterStatus(e.target.value)}
-                      >
-                        <option value="all">All Types</option>
-                        <option value="wedding">Wedding</option>
-                        <option value="birthday">Birthday</option>
-                        <option value="corporate">Corporate</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="p-8 grid grid-cols-1 gap-4">
-                    {events.filter(e => filterStatus === 'all' || e.type === filterStatus).map(event => (
-                      <div key={event.id} className="p-6 rounded-3xl border border-slate-100 hover:border-gold/30 transition-all flex items-center justify-between group">
-                        <div className="flex items-center gap-4">
-                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
-                            event.type === 'wedding' ? 'bg-rose/10 text-rose' : 
-                            event.type === 'birthday' ? 'bg-blue/10 text-blue-500' : 
-                            'bg-purple/10 text-purple-500'
-                          }`}>
-                            {event.type === 'wedding' ? <Heart size={24} /> : event.type === 'birthday' ? <Sparkles size={24} /> : <Briefcase size={24} />}
-                          </div>
-                          <div>
-                            <h4 className="font-bold text-slate-800">{event.name}</h4>
-                            <p className="text-xs text-slate-500">{event.date} • {event.location}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-6">
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
-                            event.status === 'approved' ? 'bg-emerald-100 text-emerald-600' : 
-                            event.status === 'rejected' ? 'bg-red-100 text-red-600' : 
-                            'bg-amber-100 text-amber-600'
-                          }`}>
-                            {event.status}
-                          </span>
-                          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {event.status === 'pending' && (
-                              <button onClick={() => updateStatus('events', event.id, 'approved')} className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-500 hover:text-white transition-all"><CheckCircle size={16} /></button>
-                            )}
-                            <button className="p-2 bg-slate-50 text-slate-400 rounded-lg hover:bg-slate-800 hover:text-white transition-all"><Edit size={16} /></button>
-                            <button className="p-2 bg-slate-50 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all"><Trash2 size={16} /></button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'revenue' && (
-                <div className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-emerald-500/20">
-                      <p className="text-[10px] font-bold uppercase tracking-widest opacity-80 mb-2">Total Earnings</p>
-                      <p className="text-3xl font-bold">₹{(reports?.totalRevenue || 0).toLocaleString()}</p>
-                      <div className="mt-6 flex items-center gap-2 text-xs font-medium bg-white/10 w-fit px-3 py-1 rounded-full">
-                        <TrendingUp size={14} /> +12% from last month
-                      </div>
-                    </div>
-                    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Platform Commission (10%)</p>
-                      <p className="text-3xl font-bold text-slate-800">₹{((reports?.totalRevenue || 0) * 0.1).toLocaleString()}</p>
-                    </div>
-                    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Pending Payouts</p>
-                      <p className="text-3xl font-bold text-rose">₹1.2L</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
-                    <div className="p-8 border-b border-slate-100">
-                      <h3 className="font-bold text-slate-800">Payment History</h3>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="bg-slate-50">
-                            <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Transaction ID</th>
-                            <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Customer</th>
-                            <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amount</th>
-                            <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
-                            <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                          {bookings.map(booking => (
-                            <tr key={booking.id} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="px-8 py-4 font-mono text-xs text-slate-500">#{booking.id}</td>
-                              <td className="px-8 py-4">
-                                <p className="text-sm font-bold text-slate-800">{booking.customer_name}</p>
-                                <p className="text-[10px] text-slate-400">{booking.service}</p>
-                              </td>
-                              <td className="px-8 py-4">
-                                <p className="text-sm font-bold text-slate-800">₹{booking.amount?.toLocaleString()}</p>
-                              </td>
-                              <td className="px-8 py-4">
-                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
-                                  booking.payment_status === 'Paid' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
-                                }`}>
-                                  {booking.payment_status}
-                                </span>
-                              </td>
-                              <td className="px-8 py-4 text-xs text-slate-500">{booking.date}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'analytics' && reports && (
-                <div className="space-y-8">
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                      <h3 className="font-bold text-slate-800 mb-8">Monthly Growth</h3>
-                      <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={reports.monthlyTrends}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                            <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                            <Tooltip 
-                              contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                            />
-                            <Legend iconType="circle" wrapperStyle={{ fontSize: 12, paddingTop: 20 }} />
-                            <Line type="monotone" dataKey="bookings" stroke="#D4AF37" strokeWidth={3} dot={{ r: 4, fill: '#D4AF37' }} activeDot={{ r: 6 }} />
-                            <Line type="monotone" dataKey="revenue" stroke="#E11D48" strokeWidth={3} dot={{ r: 4, fill: '#E11D48' }} activeDot={{ r: 6 }} />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                      <h3 className="font-bold text-slate-800 mb-8">Top Cities</h3>
-                      <div className="space-y-6">
-                        {[
-                          { city: 'Udaipur', share: 45, color: 'bg-gold' },
-                          { city: 'Mumbai', share: 25, color: 'bg-rose' },
-                          { city: 'Jaipur', share: 20, color: 'bg-blue-500' },
-                          { city: 'Delhi', share: 10, color: 'bg-emerald-500' },
-                        ].map((item, i) => (
-                          <div key={i} className="space-y-2">
-                            <div className="flex justify-between text-xs font-bold">
-                              <span className="text-slate-600">{item.city}</span>
-                              <span className="text-slate-800">{item.share}%</span>
-                            </div>
-                            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                              <div className={`h-full ${item.color}`} style={{ width: `${item.share}%` }} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-12 p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Peak Season</p>
-                        <p className="text-sm font-bold text-slate-800">November - February</p>
-                        <p className="text-xs text-slate-500 mt-1">65% of annual bookings occur in this window.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'ai' && aiConfig && (
-                <div className="max-w-3xl space-y-8">
-                  <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                    <div className="flex items-center justify-between mb-8">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gold/10 rounded-2xl flex items-center justify-center text-gold">
-                          <Zap size={24} />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-slate-800">Aira AI Control Panel</h3>
-                          <p className="text-xs text-slate-500">Customize AI behavior and prompts</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-400 uppercase">Status</span>
-                        <div className={`w-3 h-3 rounded-full animate-pulse ${aiConfig.recommendationsEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                      </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      <div className="space-y-3">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">System Instruction (Prompt)</label>
-                        <textarea 
-                          value={aiConfig.expertChatPrompt}
-                          onChange={e => setAiConfig({ ...aiConfig, expertChatPrompt: e.target.value })}
-                          rows={6}
-                          className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm text-slate-700 outline-none focus:ring-2 focus:ring-gold/30 transition-all resize-none"
-                        />
-                        <p className="text-[10px] text-slate-400 italic">* This prompt defines Aira's personality and core capabilities.</p>
-                      </div>
-
-                      <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                        <div>
-                          <p className="text-sm font-bold text-slate-800">Enable Smart Recommendations</p>
-                          <p className="text-xs text-slate-500">AI will proactively suggest vendors and tasks</p>
-                        </div>
-                        <button 
-                          onClick={() => setAiConfig({ ...aiConfig, recommendationsEnabled: !aiConfig.recommendationsEnabled })}
-                          className={`w-12 h-6 rounded-full transition-all relative ${aiConfig.recommendationsEnabled ? 'bg-gold' : 'bg-slate-300'}`}
-                        >
-                          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${aiConfig.recommendationsEnabled ? 'right-1' : 'left-1'}`} />
-                        </button>
-                      </div>
-
-                      <div className="pt-4 flex gap-3">
-                        <button 
-                          onClick={() => saveAiConfig(aiConfig)}
-                          className="flex-1 bg-slate-800 text-ivory py-4 rounded-2xl font-bold text-sm shadow-xl hover:bg-slate-900 transition-all flex items-center justify-center gap-2"
-                        >
-                          <Save size={18} /> Save AI Configuration
-                        </button>
-                        <button className="px-6 py-4 rounded-2xl border border-slate-200 text-slate-500 font-bold text-sm hover:bg-slate-50 transition-all">
-                          Reset to Default
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-800 p-8 rounded-[2.5rem] text-ivory">
-                    <h3 className="font-bold mb-6 flex items-center gap-2">
-                      <Activity size={18} className="text-gold" /> AI Activity Monitor
-                    </h3>
-                    <div className="space-y-4">
-                      {[
-                        { user: 'Priya S.', action: 'Vendor Search', result: 'Found 3 Photographers', time: '2 mins ago' },
-                        { user: 'Rohan M.', action: 'Budget Query', result: 'Provided Summary', time: '15 mins ago' },
-                        { user: 'Sneha K.', action: 'Task Addition', result: 'Added "Book Venue"', time: '1 hour ago' },
-                      ].map((log, i) => (
-                        <div key={i} className="flex items-center justify-between py-3 border-b border-white/10 last:border-0">
-                          <div>
-                            <p className="text-xs font-bold">{log.user} <span className="text-gold/60 font-normal ml-2">{log.action}</span></p>
-                            <p className="text-[10px] text-ivory/40">{log.result}</p>
-                          </div>
-                          <span className="text-[10px] text-ivory/40">{log.time}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'notifications' && (
-                <div className="max-w-3xl space-y-8">
-                  <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                    <h3 className="font-bold text-slate-800 mb-6">Send Global Notification</h3>
-                    <div className="space-y-4">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Title</label>
-                        <input type="text" placeholder="e.g. New Feature Alert!" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-gold/30" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Message</label>
-                        <textarea rows={3} placeholder="Type your message to all users..." className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-gold/30 resize-none" />
-                      </div>
-                      <button 
-                        onClick={(e) => {
-                          const parent = e.currentTarget.parentElement;
-                          const title = (parent?.querySelector('input') as HTMLInputElement).value;
-                          const message = (parent?.querySelector('textarea') as HTMLTextAreaElement).value;
-                          if (title && message) {
-                            sendNotification(title, message);
-                            (parent?.querySelector('input') as HTMLInputElement).value = '';
-                            (parent?.querySelector('textarea') as HTMLTextAreaElement).value = '';
-                          }
-                        }}
-                        className="w-full bg-rose text-white py-4 rounded-2xl font-bold text-sm shadow-xl shadow-rose/20 hover:bg-rose-600 transition-all flex items-center justify-center gap-2"
-                      >
-                        <Send size={18} /> Broadcast Notification
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="font-bold text-slate-800 px-2">Recent Alerts</h3>
-                    {notifications.map(notif => (
-                      <div key={notif.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-start gap-4">
-                        <div className="w-10 h-10 rounded-2xl bg-gold/10 flex items-center justify-center text-gold flex-shrink-0">
-                          <Bell size={20} />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start mb-1">
-                            <h4 className="font-bold text-slate-800 text-sm">{notif.title}</h4>
-                            <span className="text-[10px] text-slate-400">{new Date(notif.date).toLocaleDateString()}</span>
-                          </div>
-                          <p className="text-xs text-slate-500 leading-relaxed">{notif.message}</p>
-                        </div>
-                        <button className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'settings' && (
-                <div className="max-w-3xl space-y-8">
-                  <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                    <h3 className="font-bold text-slate-800 mb-8 flex items-center gap-2">
-                      <Globe size={20} className="text-blue-500" /> App Configuration
-                    </h3>
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">App Name</label>
-                          <input type="text" defaultValue="VIVAHA" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold" />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Primary Theme Color</label>
-                          <div className="flex gap-2">
-                            <div className="w-12 h-12 rounded-2xl bg-rose border-4 border-white shadow-sm cursor-pointer" />
-                            <div className="w-12 h-12 rounded-2xl bg-gold border-4 border-white shadow-sm cursor-pointer" />
-                            <div className="w-12 h-12 rounded-2xl bg-slate-800 border-4 border-white shadow-sm cursor-pointer" />
-                            <button className="w-12 h-12 rounded-2xl bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center text-slate-400"><Plus size={16} /></button>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Branding Logo (URL)</label>
-                        <input type="text" defaultValue="https://vivaha.app/logo.png" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                    <h3 className="font-bold text-slate-800 mb-8 flex items-center gap-2">
-                      <Lock size={20} className="text-rose" /> API & Security Settings
-                    </h3>
-                    <div className="space-y-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gemini API Key</label>
-                        <div className="relative">
-                          <input type="password" value="••••••••••••••••" readOnly className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm" />
-                          <button className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gold uppercase tracking-widest">Reveal</button>
-                        </div>
-                        <p className="text-[10px] text-slate-400 italic">Managed via environment variables for security.</p>
-                      </div>
-                      <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                        <div>
-                          <p className="text-sm font-bold text-slate-800">Maintenance Mode</p>
-                          <p className="text-xs text-slate-500">Disable app access for all users</p>
-                        </div>
-                        <button className="w-12 h-6 rounded-full bg-slate-300 transition-all relative">
-                          <div className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'ai' && aiConfig && (
-                <div className="max-w-4xl space-y-8">
-                  <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                    <div className="flex items-center justify-between mb-8">
-                      <div>
-                        <h3 className="font-bold text-slate-800">Aira AI Control Panel</h3>
-                        <p className="text-xs text-slate-500">Customize AI behavior and prompts</p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">AI Recommendations</span>
-                        <button 
-                          onClick={() => setAiConfig({ ...aiConfig, recommendationsEnabled: !aiConfig.recommendationsEnabled })}
-                          className={`w-12 h-6 rounded-full transition-all relative ${aiConfig.recommendationsEnabled ? 'bg-gold' : 'bg-slate-200'}`}
-                        >
-                          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${aiConfig.recommendationsEnabled ? 'left-7' : 'left-1'}`} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">System Instruction (Expert Chat)</label>
-                        <textarea 
-                          value={aiConfig.expertChatPrompt}
-                          onChange={(e) => setAiConfig({ ...aiConfig, expertChatPrompt: e.target.value })}
-                          rows={6}
-                          className="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium outline-none focus:ring-2 focus:ring-gold/30 leading-relaxed"
-                        />
-                        <p className="text-[10px] text-slate-400 italic">* This prompt defines Aira's personality and core capabilities.</p>
-                      </div>
-
-                      <div className="flex justify-end">
-                        <button 
-                          onClick={() => saveAiConfig(aiConfig)}
-                          className="bg-slate-800 text-ivory px-8 py-4 rounded-2xl font-bold text-sm shadow-xl hover:bg-slate-900 transition-all"
-                        >
-                          Update AI Configuration
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'profile' && (
-                <div className="max-w-3xl bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100">
-                  <div className="flex flex-col items-center text-center mb-10">
-                    <div className="relative group">
-                      <img src={adminProfile.image} className="w-32 h-32 rounded-[2.5rem] border-4 border-gold/20 p-1 mb-6 shadow-xl" alt="Profile" referrerPolicy="no-referrer" />
-                      <button className="absolute bottom-4 right-0 w-10 h-10 bg-gold text-slate-900 rounded-2xl flex items-center justify-center shadow-lg border-4 border-white opacity-0 group-hover:opacity-100 transition-all">
-                        <Edit size={18} />
-                      </button>
-                    </div>
-                    <h3 className="text-2xl font-bold text-slate-800">{adminProfile.name}</h3>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="bg-slate-800 text-gold text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">{adminProfile.role}</span>
-                      <span className="text-xs text-slate-400 font-medium">Member since 2024</span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
-                      <input 
-                        type="text" 
-                        value={isEditingProfile ? editedAdmin.name : adminProfile.name} 
-                        onChange={(e) => setEditedAdmin({ ...editedAdmin, name: e.target.value })}
-                        disabled={!isEditingProfile}
-                        className={`w-full p-4 border rounded-2xl text-sm font-bold outline-none transition-all ${isEditingProfile ? 'bg-slate-50 border-gold/30 focus:ring-2 focus:ring-gold/30' : 'bg-slate-100 border-slate-100 cursor-not-allowed'}`} 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
-                      <input type="email" value={adminProfile.email} readOnly className="w-full p-4 bg-slate-100 border border-slate-100 rounded-2xl text-sm text-slate-500 cursor-not-allowed" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Contact Number</label>
-                      <input 
-                        type="tel" 
-                        value={isEditingProfile ? editedAdmin.contact : adminProfile.contact} 
-                        onChange={(e) => setEditedAdmin({ ...editedAdmin, contact: e.target.value })}
-                        disabled={!isEditingProfile}
-                        className={`w-full p-4 border rounded-2xl text-sm font-bold outline-none transition-all ${isEditingProfile ? 'bg-slate-50 border-gold/30 focus:ring-2 focus:ring-gold/30' : 'bg-slate-100 border-slate-100 cursor-not-allowed'}`} 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Account Role</label>
-                      <div className="w-full p-4 bg-slate-100 border border-slate-100 rounded-2xl text-sm text-slate-500 flex items-center gap-2">
-                        <Shield size={16} /> {adminProfile.role}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-12 pt-8 border-t border-slate-100 flex justify-end gap-4">
-                    {!isEditingProfile ? (
-                      <button 
-                        onClick={() => {
-                          setEditedAdmin(adminProfile);
-                          setIsEditingProfile(true);
-                        }}
-                        className="px-8 py-4 rounded-2xl bg-slate-800 text-ivory font-bold text-sm shadow-xl hover:bg-slate-900 transition-all"
-                      >
-                        Edit Profile
-                      </button>
+                  <div style={{ fontSize: 12, color: '#854F0B', marginBottom: 12 }}>★ {v.rating}</div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {v.status === 'Pending' ? (
+                      <>
+                        <button style={{ flex: 1, padding: 6, fontSize: 11.5, borderRadius: 6, border: 'none', background: '#EAF3DE', color: '#3B6D11', cursor: 'pointer' }}>Approve</button>
+                        <button style={{ flex: 1, padding: 6, fontSize: 11.5, borderRadius: 6, border: 'none', background: '#FCEBEB', color: '#A32D2D', cursor: 'pointer' }}>Reject</button>
+                      </>
                     ) : (
                       <>
-                        <button 
-                          onClick={() => setIsEditingProfile(false)}
-                          className="px-8 py-4 rounded-2xl text-slate-500 font-bold text-sm hover:bg-slate-50 transition-all"
-                        >
-                          Cancel
-                        </button>
-                        <button 
-                          onClick={handleSaveProfile}
-                          className="px-8 py-4 rounded-2xl bg-gold text-slate-900 font-bold text-sm shadow-xl hover:bg-gold/90 transition-all"
-                        >
-                          Save Changes
-                        </button>
+                        <button style={{ flex: 1, padding: 6, fontSize: 11.5, borderRadius: 6, border: '0.5px solid #e2e8f0', background: 'none', color: '#64748b', cursor: 'pointer' }}>Edit</button>
+                        <button style={{ flex: 1, padding: 6, fontSize: 11.5, borderRadius: 6, border: '0.5px solid #e2e8f0', background: 'none', color: '#A32D2D', cursor: 'pointer' }}>Remove</button>
                       </>
                     )}
                   </div>
                 </div>
-              )}
+              ))}
             </div>
           )}
-        </main>
+
+          {/* REVENUE */}
+          {activeTab === 'revenue' && (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                {[
+                  { label: 'Total Earnings', value: '₹25,00,000', bg: '#EAF3DE', color: '#27500A' },
+                  { label: 'Platform Cut (10%)', value: '₹2,50,000', bg: 'white', color: '#1e293b' },
+                  { label: 'Pending Payouts', value: '₹1,20,000', bg: 'white', color: '#A32D2D' },
+                ].map((s, i) => (
+                  <div key={i} style={{ background: s.bg, border: '0.5px solid #e2e8f0', borderRadius: 12, padding: '14px 16px' }}>
+                    <div style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{s.label}</div>
+                    <div style={{ fontSize: 20, fontWeight: 600, color: s.color }}>{s.value}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ background: 'white', border: '0.5px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+                <div style={{ padding: '12px 16px', borderBottom: '0.5px solid #e2e8f0', fontSize: 13, fontWeight: 500, color: '#1e293b' }}>Payment History</div>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+                  <thead><tr style={{ background: '#f8fafc' }}>
+                    {['ID', 'Customer', 'Amount', 'Status'].map(h => <th key={h} style={{ padding: '9px 14px', textAlign: 'left', fontSize: 10.5, fontWeight: 500, color: '#64748b', textTransform: 'uppercase' }}>{h}</th>)}
+                  </tr></thead>
+                  <tbody>
+                    {[
+                      { id: '#001', name: 'Priya Sharma', amount: '₹5,00,000', status: 'Paid', sc: '#EAF3DE', tc: '#3B6D11' },
+                      { id: '#002', name: 'Rohan Mehta', amount: '₹1,50,000', status: 'Pending', sc: '#FAEEDA', tc: '#854F0B' },
+                    ].map((b, i) => (
+                      <tr key={i} style={{ borderTop: '0.5px solid #f1f5f9' }}>
+                        <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: '#94a3b8' }}>{b.id}</td>
+                        <td style={{ padding: '10px 14px', fontWeight: 500, color: '#1e293b' }}>{b.name}</td>
+                        <td style={{ padding: '10px 14px', fontWeight: 500, color: '#1e293b' }}>{b.amount}</td>
+                        <td style={{ padding: '10px 14px' }}><span style={{ background: b.sc, color: b.tc, padding: '2px 8px', borderRadius: 20, fontSize: 10.5, fontWeight: 500 }}>{b.status}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          {/* AI CONTROL */}
+          {activeTab === 'ai' && (
+            <div style={{ background: 'white', border: '0.5px solid #e2e8f0', borderRadius: 12, padding: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b', marginBottom: 16 }}>Aira AI Control Panel</div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>System Instruction</label>
+                <textarea
+                  defaultValue="You are Aira, a professional AI Wedding Concierge for the Vivaha app."
+                  style={{ width: '100%', border: '0.5px solid #e2e8f0', borderRadius: 8, padding: 10, fontSize: 12.5, color: '#1e293b', background: '#f8fafc', resize: 'none', height: 90 }}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: '#f8fafc', borderRadius: 8, marginBottom: 12 }}>
+                <div>
+                  <div style={{ fontSize: 12.5, fontWeight: 500, color: '#1e293b' }}>Smart Recommendations</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8' }}>AI suggests vendors and tasks</div>
+                </div>
+                <div style={{ width: 36, height: 20, borderRadius: 10, background: '#185FA5', position: 'relative', cursor: 'pointer' }}>
+                  <div style={{ position: 'absolute', right: 3, top: 3, width: 14, height: 14, borderRadius: '50%', background: 'white' }} />
+                </div>
+              </div>
+              <button style={{ background: '#1e293b', color: 'white', border: 'none', padding: '9px 18px', borderRadius: 8, fontSize: 12.5, cursor: 'pointer', fontWeight: 500 }}>Save Configuration</button>
+            </div>
+          )}
+
+          {/* SETTINGS */}
+          {activeTab === 'settings' && (
+            <div style={{ background: 'white', border: '0.5px solid #e2e8f0', borderRadius: 12, padding: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b', marginBottom: 16 }}>App Configuration</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.06em' }}>App Name</label>
+                  <input type="text" defaultValue="VIVAHA" style={{ width: '100%', padding: '8px 12px', border: '0.5px solid #e2e8f0', borderRadius: 8, fontSize: 13, background: '#f8fafc', color: '#1e293b' }} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: '#f8fafc', borderRadius: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 12.5, fontWeight: 500, color: '#1e293b' }}>Maintenance Mode</div>
+                    <div style={{ fontSize: 11, color: '#94a3b8' }}>Disable app for all users</div>
+                  </div>
+                  <div style={{ width: 36, height: 20, borderRadius: 10, background: '#e2e8f0', position: 'relative', cursor: 'pointer' }}>
+                    <div style={{ position: 'absolute', left: 3, top: 3, width: 14, height: 14, borderRadius: '50%', background: 'white' }} />
+                  </div>
+                </div>
+                <button style={{ background: '#1e293b', color: 'white', border: 'none', padding: '9px 18px', borderRadius: 8, fontSize: 12.5, cursor: 'pointer', fontWeight: 500, width: 'fit-content' }}>Save Settings</button>
+              </div>
+            </div>
+          )}
+
+          {/* EVENTS */}
+          {activeTab === 'events' && (
+            <div style={{ background: 'white', border: '0.5px solid #e2e8f0', borderRadius: 12, padding: 40, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+              Events tab — add your events content here
+            </div>
+          )}
+
+        </div>
       </div>
     </div>
   );
 };
-
 const VendorDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'bookings' | 'inquiries' | 'reviews' | 'gallery' | 'profile'>('dashboard');
   
